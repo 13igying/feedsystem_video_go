@@ -1,9 +1,45 @@
 # 测试套件运行指南
 
-> **典型场景**：项目部署在服务器上（如 `172.16.0.97`），您在本地电脑运行测试。
-> 测试代码通过环境变量指向服务器地址，**无需改动任何代码**。
+> **典型场景**：项目部署在内网服务器上，您在外网电脑通过浏览器直接访问，**无需拷贝任何代码**。
 
-## 快速开始（本地电脑 → 服务器）
+## 🌐 外网访问（推荐，零拷贝）
+
+服务器通过 Cloudflare Tunnel 把三个服务暴露到公网，您在外网浏览器直接打开即可：
+
+| 服务 | 说明 |
+|------|------|
+| **Web 测试运行器** | 网页上点按钮跑全部测试 / UI 自动化演示，实时看日志和截图墙 |
+| **前端页面** | 直接体验项目本身 |
+| **后端 API** | 供本地 Postman/curl 调试 |
+
+### 服务器上启动隧道（一次性操作，管理员执行）
+
+```bash
+# 安装 cloudflared（已装可跳过）
+curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflared.list
+sudo apt-get update && sudo apt-get install -y cloudflared
+
+# 启动 3 条隧道（后台运行）
+/root/feedsystem_video_go/tests/tunnel.sh start
+
+# 查看当前公网地址（每次启动域名随机生成）
+/root/feedsystem_video_go/tests/tunnel.sh status
+```
+
+> **注意**：quick tunnel 的域名每次重启会变化，把 `tunnel.sh status` 输出的最新地址发给需要访问的人即可。隧道断线会自动重连，但域名不变（进程存活期间）。
+
+### 外网电脑上使用
+
+1. 向管理员要 3 个 `https://xxx.trycloudflare.com` 地址
+2. 浏览器打开**运行器**地址 → 网页上直接点按钮运行测试、看实时日志、看 UI 演示截图墙
+3. 想本地跑 pytest？无需拷代码，直接指定公网 API 地址：
+   ```bash
+   pip install pytest requests
+   API_BASE_URL=https://<后端隧道地址> pytest <本地测试文件> -v
+   ```
+
+## 快速开始（内网电脑 → 服务器）
 
 ```bash
 # 1. 拷贝 tests/ 到本地（见下方"获取测试代码"）
