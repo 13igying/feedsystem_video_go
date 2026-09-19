@@ -1,0 +1,58 @@
+{
+  "user": "uidemo_099dbdb8",
+  "steps": [
+    {
+      "name": "打开首页",
+      "ok": true,
+      "detail": "title='ShortVideo'"
+    },
+    {
+      "name": "进入注册页",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "提交注册",
+      "ok": true,
+      "detail": "user=uidemo_099dbdb8"
+    },
+    {
+      "name": "登录",
+      "ok": true,
+      "detail": "user=uidemo_099dbdb8"
+    },
+    {
+      "name": "浏览推荐页",
+      "ok": true,
+      "detail": "http://127.0.0.1:5173/"
+    },
+    {
+      "name": "切换热榜",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "进入账号页",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "进入设置页",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "passed": true,
+  "shots": [
+    "01_home.png",
+    "02_register_page.png",
+    "03_register_filled.png",
+    "04_register_done.png",
+    "05_login_filled.png",
+    "06_after_login.png",
+    "07_feed.png",
+    "08_hot.png",
+    "09_account.png",
+    "10_settings.png"
+  ]
+}

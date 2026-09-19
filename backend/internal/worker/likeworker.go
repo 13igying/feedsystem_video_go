@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"feedsystem_video_go/internal/middleware/rabbitmq"
+	rediscache "feedsystem_video_go/internal/middleware/redis"
 	"feedsystem_video_go/internal/video"
 	"log"
 	"time"
@@ -17,10 +18,24 @@ type LikeWorker struct {
 	likes  *video.LikeRepository
 	videos *video.VideoRepository
 	queue  string
+	cache  *rediscache.Client
 }
 
-func NewLikeWorker(ch *amqp.Channel, likes *video.LikeRepository, videos *video.VideoRepository, queue string) *LikeWorker {
-	return &LikeWorker{ch: ch, likes: likes, videos: videos, queue: queue}
+func NewLikeWorker(ch *amqp.Channel, likes *video.LikeRepository, videos *video.VideoRepository, queue string, cache *rediscache.Client) *LikeWorker {
+	return &LikeWorker{ch: ch, likes: likes, videos: videos, queue: queue, cache: cache}
+}
+
+// invalidateDetailCache 点赞数变更后删除视频详情缓存，避免读到旧计数。
+func (w *LikeWorker) invalidateDetailCache(videoID uint) {
+	if w.cache == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	key := w.cache.Key("video:detail:id=%d", videoID)
+	if err := w.cache.Del(ctx, key); err != nil {
+		log.Printf("[LikeWorker] invalidate detail cache failed: %v", err)
+	}
 }
 
 func (w *LikeWorker) Run(ctx context.Context) error {
@@ -126,6 +141,7 @@ func (w *LikeWorker) applyLike(ctx context.Context, userID, videoID uint) error 
 	if err := w.videos.ChangeLikesCount(ctx, videoID, 1); err != nil {
 		return err
 	}
+	w.invalidateDetailCache(videoID)
 	return w.videos.ChangePopularity(ctx, videoID, 1)
 }
 
@@ -149,5 +165,6 @@ func (w *LikeWorker) applyUnlike(ctx context.Context, userID, videoID uint) erro
 	if err := w.videos.ChangeLikesCount(ctx, videoID, -1); err != nil {
 		return err
 	}
+	w.invalidateDetailCache(videoID)
 	return w.videos.ChangePopularity(ctx, videoID, -1)
 }

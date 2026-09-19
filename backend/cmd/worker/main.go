@@ -190,7 +190,7 @@ func main() {
 		return worker.NewSocialWorker(ch, socialRepo, socialQueue).Run(ctx)
 	})
 	go runWorkerWithRetry(ctx, "LikeWorker", conn, func(ch *amqp.Channel) error {
-		return worker.NewLikeWorker(ch, likeRepo, videoRepo, likeQueue).Run(ctx)
+		return worker.NewLikeWorker(ch, likeRepo, videoRepo, likeQueue, cache).Run(ctx)
 	})
 	go runWorkerWithRetry(ctx, "CommentWorker", conn, func(ch *amqp.Channel) error {
 		return worker.NewCommentWorker(ch, commentRepo, videoRepo, commentQueue).Run(ctx)

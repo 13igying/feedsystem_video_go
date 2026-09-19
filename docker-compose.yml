@@ -67,6 +67,9 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-123456}
       RABBITMQ_USER: ${RABBITMQ_USER:-admin}
       RABBITMQ_PASS: ${RABBITMQ_PASS:-password123}
+      # 限流参数（测试环境调高注册/登录限额，默认值与原硬编码一致）
+      RATELIMIT_REGISTER_MAX: ${RATELIMIT_REGISTER_MAX:-1000}
+      RATELIMIT_LOGIN_MAX: ${RATELIMIT_LOGIN_MAX:-1000}
     ports:
       - "8080:8080"
     volumes:

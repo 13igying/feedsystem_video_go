@@ -35,7 +35,7 @@ func (h *AccountHandler) CreateAccount(c *gin.Context) {
 		Username: req.Username,
 		Password: req.Password,
 	}); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(apierror.ClassifyHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(200, gin.H{"message": "account created"})
@@ -121,12 +121,13 @@ func (h *AccountHandler) Login(c *gin.Context) {
 	}
 	account, err := h.accountService.FindByUsername(c.Request.Context(), req.Username)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		// 登录场景不泄露用户是否存在：用户不存在与密码错误统一 401
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
 	accessToken, refreshToken, err := h.accountService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(apierror.ClassifyHTTPStatus(err), gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(200, LoginResponse{Token: accessToken, RefreshToken: refreshToken, AccountID: account.ID, Username: account.Username})

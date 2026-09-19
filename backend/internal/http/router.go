@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"feedsystem_video_go/internal/account"
+	"feedsystem_video_go/internal/bugtracker"
 	"feedsystem_video_go/internal/feed"
 	"feedsystem_video_go/internal/message"
 	"feedsystem_video_go/internal/middleware/jwt"
@@ -13,11 +14,24 @@ import (
 	"feedsystem_video_go/internal/video"
 	"feedsystem_video_go/internal/worker"
 	"log"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// envInt64 读取整型环境变量，未设置或非法时返回默认值。
+func envInt64(key string, def int64) int64 {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return n
+		}
+	}
+	return def
+}
 
 func SetRouter(db *gorm.DB, cache *rediscache.Client, rmq *rabbitmq.RabbitMQ) *gin.Engine {
 	r := gin.Default()
@@ -28,9 +42,11 @@ func SetRouter(db *gorm.DB, cache *rediscache.Client, rmq *rabbitmq.RabbitMQ) *g
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 	r.Static("/static", "./.run/uploads")
-	// rate_limit
-	loginLimiter := ratelimit.Limit(cache, "account_login", 10, time.Minute, ratelimit.KeyByIP)
-	registerLimiter := ratelimit.Limit(cache, "account_register", 5, time.Hour, ratelimit.KeyByIP)
+	// rate_limit（参数可通过环境变量覆盖，默认值保持原有限制）
+	loginLimiter := ratelimit.Limit(cache, "account_login",
+		envInt64("RATELIMIT_LOGIN_MAX", 10), time.Minute, ratelimit.KeyByIP)
+	registerLimiter := ratelimit.Limit(cache, "account_register",
+		envInt64("RATELIMIT_REGISTER_MAX", 5), time.Hour, ratelimit.KeyByIP)
 
 	likeLimiter := ratelimit.Limit(cache, "like_write", 30, time.Minute, ratelimit.KeyByAccount)
 	commentLimiter := ratelimit.Limit(cache, "comment_write", 10, time.Minute, ratelimit.KeyByAccount)
@@ -193,6 +209,22 @@ func SetRouter(db *gorm.DB, cache *rediscache.Client, rmq *rabbitmq.RabbitMQ) *g
 	{
 		protectedMessageGroup.POST("/send", messageHandler.Send)
 		protectedMessageGroup.POST("/list", messageHandler.List)
+	}
+	// bugtracker（Bug 管理平台：提交/状态流转/飞书通知）
+	bugRepo := bugtracker.NewRepository(db)
+	if err := bugRepo.AutoMigrate(context.Background()); err != nil {
+		log.Printf("bug AutoMigrate failed: %v", err)
+	}
+	bugNotifier := bugtracker.NewFeishuNotifier()
+	bugService := bugtracker.NewService(bugRepo, accountRepository, bugNotifier)
+	bugHandler := bugtracker.NewHandler(bugService)
+	bugGroup := r.Group("/bug")
+	protectedBugGroup := bugGroup.Group("")
+	protectedBugGroup.Use(jwt.JWTAuth(accountRepository, cache))
+	{
+		protectedBugGroup.POST("/create", bugHandler.Create)
+		protectedBugGroup.POST("/updateStatus", bugHandler.UpdateStatus)
+		protectedBugGroup.POST("/list", bugHandler.List)
 	}
 	//worker
 	timelineMQ, err := rabbitmq.NewTimelineMQ(rmq)

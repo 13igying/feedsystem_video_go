@@ -10,6 +10,7 @@ import (
 	"time"
 
 	rediscache "feedsystem_video_go/internal/middleware/redis"
+	"feedsystem_video_go/internal/apierror"
 
 	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
@@ -24,6 +25,8 @@ type AccountService struct {
 var (
 	ErrUsernameTaken       = errors.New("username already exists")
 	ErrNewUsernameRequired = errors.New("new_username is required")
+	ErrInvalidCredentials  = errors.New("invalid username or password")
+	ErrMissingFields       = errors.New("username and password are required")
 )
 
 func NewAccountService(accountRepository *AccountRepository, cache *rediscache.Client) *AccountService {
@@ -31,12 +34,20 @@ func NewAccountService(accountRepository *AccountRepository, cache *rediscache.C
 }
 
 func (as *AccountService) CreateAccount(ctx context.Context, account *Account) error {
+	if strings.TrimSpace(account.Username) == "" || account.Password == "" {
+		return apierror.Wrap(apierror.ErrValidation, ErrMissingFields)
+	}
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(account.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	account.Password = string(passwordHash)
 	if err := as.accountRepository.CreateAccount(ctx, account); err != nil {
+		// MySQL 1062: 重复键 -> 归一为 ErrUsernameTaken（400）
+		var mysqlErr *mysql.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+			return apierror.Wrap(apierror.ErrValidation, ErrUsernameTaken)
+		}
 		return err
 	}
 	return nil
@@ -116,7 +127,7 @@ func (as *AccountService) Login(ctx context.Context, username, password string) 
 		return "", "", err
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(account.Password), []byte(password)); err != nil {
-		return "", "", err
+		return "", "", apierror.Wrap(apierror.ErrUnauthorized, ErrInvalidCredentials)
 	}
 	accessToken, err := auth.GenerateToken(account.ID, account.Username)
 	if err != nil {
