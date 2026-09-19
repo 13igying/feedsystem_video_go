@@ -8,6 +8,7 @@ UI 自动化演示：Playwright 驱动真实浏览器，模拟用户完整操作
 由 test_runner_server.py 以子进程方式调用，输出步骤日志 + 截图路径。
 """
 import json
+import os
 import sys
 import time
 import uuid
@@ -15,8 +16,10 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-FRONTEND = "http://127.0.0.1:5173"
-SHOTS = Path("/root/feedsystem_video_go/tests/ui_shots")
+# 支持本地电脑远程运行：FRONTEND_URL 指向服务器前端地址
+# 例：FRONTEND_URL=http://172.16.0.97:5173 python ui_demo.py
+FRONTEND = os.environ.get("FRONTEND_URL", "http://127.0.0.1:5173").rstrip("/")
+SHOTS = Path(__file__).parent / "ui_shots"
 SHOTS.mkdir(parents=True, exist_ok=True)
 
 

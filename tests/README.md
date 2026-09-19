@@ -1,8 +1,26 @@
 # 测试套件运行指南
 
-## 本地电脑远程运行（针对部署在服务器上的服务）
+> **典型场景**：项目部署在服务器上（如 `172.16.0.97`），您在本地电脑运行测试。
+> 测试代码通过环境变量指向服务器地址，**无需改动任何代码**。
 
-测试通过 `API_BASE_URL` 环境变量指向任意后端地址，无需改动代码。
+## 快速开始（本地电脑 → 服务器）
+
+```bash
+# 1. 拷贝 tests/ 到本地（见下方"获取测试代码"）
+# 2. 本地装依赖（一次性）
+cd tests && python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 3. API 测试：指向服务器后端
+API_BASE_URL=http://172.16.0.97:8080 .venv/bin/pytest tests/api/ -v
+
+# 4. UI 演示：指向服务器前端（本地也需装 Playwright Chromium，见下文）
+FRONTEND_URL=http://172.16.0.97:5173 .venv/bin/python ui_demo.py
+```
+
+> 把 `172.16.0.97` 换成您服务器的实际 IP/域名。若端口不通，检查服务器防火墙/安全组放行 8080、5173。
+
+## 获取测试代码（拷贝到本地电脑）
 
 ### 1. 把 tests/ 目录拷贝到本地电脑
 
@@ -103,8 +121,22 @@ PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright \
   tests/.venv/bin/playwright install chromium
 ```
 
-### 查看结果
+### 本地电脑运行 UI 演示（远程指向服务器）
+
+```bash
+# 首次：本地安装 Chromium（国内可用 npmmirror 镜像加速）
+PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright \
+  .venv/bin/playwright install chromium
+
+# 运行：FRONTEND_URL 指向服务器前端
+FRONTEND_URL=http://172.16.0.97:5173 .venv/bin/python ui_demo.py
+```
+
+截图保存在本地 `tests/ui_shots/`，`result.json` 为结果摘要。
+
+### 查看结果（服务器上运行时）
 
 - 截图：`tests/ui_shots/*.png`（10 张，覆盖每个操作步骤）
 - 结果：`tests/ui_shots/result.json`（每步 ok/detail + 总体 passed）
 - Web 运行器：点击 UI 演示按钮后，页面下方自动展示截图墙，实时刷新
+  （本地电脑浏览器直接访问 `http://<服务器IP>:8081` 即可操作）
