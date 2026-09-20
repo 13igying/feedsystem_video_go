@@ -178,25 +178,72 @@ onMounted(refresh)
 </template>
 
 <style scoped>
-.bug-view { max-width: 960px; margin: 0 auto; padding: 16px; }
-.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.bug-view { max-width: 960px; margin: 0 auto; padding: 16px; color: var(--text); }
+.bug-view h1 { color: var(--text); }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card h2 { color: var(--text); font-size: 16px; margin: 0 0 12px; }
 .bug-form { display: grid; gap: 8px; }
-.bug-form input, .bug-form select, .bug-form textarea { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; }
-.bug-form button { padding: 8px 16px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.bug-form input, .bug-form select, .bug-form textarea {
+  padding: 8px 10px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+.bug-form input::placeholder, .bug-form textarea::placeholder { color: var(--muted); }
+.bug-form select option { background: var(--bg-soft); color: var(--text); }
+.bug-form input:focus, .bug-form select:focus, .bug-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.bug-form button {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.bug-form button:disabled { opacity: 0.6; cursor: not-allowed; }
 .filters { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-.filters select, .filters button { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; }
+.filters select, .filters button {
+  padding: 6px 10px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+}
+.filters select option { background: var(--bg-soft); color: var(--text); }
+.filters button:hover { border-color: var(--primary); }
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; }
+th, td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; color: var(--text); }
+th { color: var(--muted); font-weight: 600; }
 .title-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; }
+.badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; font-weight: 600; }
 .sev-critical { background: #dc2626; }
 .sev-major { background: #ea580c; }
 .sev-minor { background: #2563eb; }
 .sev-trivial { background: #6b7280; }
 .actions { display: flex; gap: 4px; flex-wrap: wrap; }
-.action-btn { padding: 4px 8px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; cursor: pointer; }
-.action-btn:hover { background: #eff6ff; }
-.error { color: #dc2626; }
-.empty { color: #6b7280; text-align: center; }
-.total { color: #6b7280; font-size: 13px; }
+.action-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.action-btn:hover { border-color: var(--primary); background: rgba(43, 161, 255, 0.14); }
+.error { color: var(--danger); }
+.empty { color: var(--muted); text-align: center; }
+.total { color: var(--muted); font-size: 13px; }
 </style>
