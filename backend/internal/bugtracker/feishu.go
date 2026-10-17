@@ -41,11 +41,27 @@ type FeishuNotifier struct {
 }
 
 func NewFeishuNotifier() *FeishuNotifier {
-	return &FeishuNotifier{
+	f := &FeishuNotifier{
 		webhookURL: os.Getenv("FEISHU_WEBHOOK_URL"),
 		secret:     os.Getenv("FEISHU_WEBHOOK_SECRET"),
 		atMap:      parseAtMap(os.Getenv("FEISHU_AT_MAP")),
 		client:     &http.Client{Timeout: 5 * time.Second},
+	}
+	f.logConfig()
+	return f
+}
+
+// logConfig 启动时打印一次通知配置模式，把“静默失败”变“显性失败”：
+// compose 默认把空 FEISHU_WEBHOOK_URL 指向 feishu-mock 模拟器，通知会“发送成功”却进不了真实群。
+// 排查入口：docker compose logs backend | grep feishu
+func (f *FeishuNotifier) logConfig() {
+	switch {
+	case f.webhookURL == "":
+		log.Print("[feishu] 配置自检: FEISHU_WEBHOOK_URL 未配置 → 通知只记日志，飞书群不会收到任何消息")
+	case strings.Contains(f.webhookURL, "feishu-mock"):
+		log.Print("[feishu] 配置自检: FEISHU_WEBHOOK_URL 指向 feishu-mock 模拟器 → 通知只进本地模拟器，正式飞书群不会收到消息；请在服务器 .env 配置真实 webhook 后执行 docker compose up -d backend 重建容器")
+	default:
+		log.Printf("[feishu] 配置自检: 已配置真实 webhook（签名校验=%v，AT_MAP 条目=%d）", f.secret != "", len(f.atMap))
 	}
 }
 

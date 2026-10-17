@@ -72,6 +72,18 @@ chmod 600 .env
 - `FEISHU_WEBHOOK_URL` 填飞书群「自定义机器人」的 webhook 地址；机器人未开启「签名校验」则 `FEISHU_WEBHOOK_SECRET` 留空。
 - 不配置该 URL 时默认指向本地 feishu-mock 模拟器（本地调试用）；服务器上务必填真实值。
 
+#### 通知没发出来？（60 秒排查）
+
+```bash
+docker compose logs backend | grep feishu | head    # ① 启动自检会直接说明当前通知模式
+docker compose logs feishu-mock --tail 20           # ② 模拟器里收到 Bug 通知 = .env 没生效，全被 mock 吃了
+grep -n FEISHU_WEBHOOK_URL .env                     # ③ 确认 .env 已填真实 webhook 地址
+```
+
+- 日志出现「指向 feishu-mock 模拟器」或「未配置 FEISHU_WEBHOOK_URL，通知降级为日志」→ `.env` 没配置或容器未重建。改完 `.env` 必须执行 `docker compose up -d backend` 重建容器（`docker compose restart` **不会**重新注入环境变量）。
+- 日志「feishu reject code=…」→ 签名密钥不对 / 机器人已被移出群 / 触发频率限制。
+- 日志「通知已发送」但群里没有消息 → 确认自检不是 mock 模式，再检查机器人是否还在群内、webhook 地址是否复制完整。
+
 ### 飞书真 @ 通知（FEISHU_AT_MAP）
 
 机器人发送**富文本消息并真实 @ 责任人**（对方会收到飞书推送提醒），需要每个成员的
