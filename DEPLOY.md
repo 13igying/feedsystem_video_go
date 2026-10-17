@@ -61,6 +61,8 @@ RABBITMQ_PASS=password123
 JWT_SECRET=$(openssl rand -hex 32)
 FEISHU_WEBHOOK_URL=<你的飞书群机器人 Webhook 地址>
 FEISHU_WEBHOOK_SECRET=
+# 真 @ 映射：平台用户名=飞书open_id，逗号分隔（获取方式见下文「飞书真 @ 通知」）
+FEISHU_AT_MAP=
 EOF
 chmod 600 .env
 ```
@@ -69,6 +71,27 @@ chmod 600 .env
 
 - `FEISHU_WEBHOOK_URL` 填飞书群「自定义机器人」的 webhook 地址；机器人未开启「签名校验」则 `FEISHU_WEBHOOK_SECRET` 留空。
 - 不配置该 URL 时默认指向本地 feishu-mock 模拟器（本地调试用）；服务器上务必填真实值。
+
+### 飞书真 @ 通知（FEISHU_AT_MAP）
+
+机器人发送**富文本消息并真实 @ 责任人**（对方会收到飞书推送提醒），需要每个成员的
+open_id（`ou_` 开头）。自定义机器人无法自行查询成员 ID，一次性按下面步骤获取：
+
+1. 打开 [飞书开放平台](https://open.feishu.cn/) → 开发者后台 → 创建**企业自建应用**（名称随意，如 `bugbot-helper`）；
+2. 应用详情 → 添加应用能力 → **机器人**；创建版本并发布（测试用途可将可用范围设为自己/本部门）；
+3. 把该应用机器人拉进 Bug 通知所在的群（群设置 → 群机器人 → 添加机器人）；
+4. 打开 [API 调试台](https://open.feishu.cn/api-explorer/)，选择该应用 → 调用「获取用户或机器人所在的群列表」
+   （`im/v1/chats`）拿到目标群的 `chat_id`，再调用「获取群成员列表」（`im/v1/chats/:chat_id/members`）；
+5. 从返回的 members 中复制每个成员的 `open_id`；
+6. 在服务器 `.env` 中配置映射（**key 必须与平台注册的用户名完全一致**）：
+   `FEISHU_AT_MAP=张三=ou_xxx,李四=ou_yyy`；
+7. `docker compose up -d backend` 重启生效。
+
+行为规则：
+
+- 映射命中 → 消息真实 @ 该成员（飞书单独向他推送提醒）；
+- 未命中/未配置 → 降级为 **@所有人**（群里成员都会被提醒，两人小群效果等同点对点）；
+- 只想快速演示（两人群、不想建应用）：不配置 `FEISHU_AT_MAP`，直接用 @所有人 也能完成闭环。
 
 ## 5. 串行构建（4G 内存，勿并行 build，防 OOM）
 

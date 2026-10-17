@@ -75,6 +75,8 @@ services:
       FEISHU_WEBHOOK_URL: ${FEISHU_WEBHOOK_URL:-http://feishu-mock:9000/webhook}
       # 机器人开启「签名校验」时填入密钥，未开启留空
       FEISHU_WEBHOOK_SECRET: ${FEISHU_WEBHOOK_SECRET:-}
+      # 平台用户名 → 飞书 open_id 映射（真 @ 提醒），形如 张三=ou_xxx,李四=ou_yyy；未映射到的成员降级为 @所有人
+      FEISHU_AT_MAP: ${FEISHU_AT_MAP:-}
     ports:
       - "8080:8080"
     volumes:

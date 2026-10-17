@@ -26,15 +26,15 @@ const (
 )
 
 type Bug struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Title       string    `gorm:"type:varchar(255);not null" json:"title"`
-	Description string    `gorm:"type:text" json:"description"`
-	Severity    Severity  `gorm:"type:varchar(16);default:minor;index" json:"severity"`
-	Status      BugStatus `gorm:"type:varchar(16);default:open;index" json:"status"`
-	ReporterID  uint      `gorm:"index:idx_bug_reporter;not null" json:"reporter_id"`  // 提交人（测试）
-	AssigneeID  uint      `gorm:"index:idx_bug_assignee;not null" json:"assignee_id"`  // 负责人（开发）
-	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID          uint       `gorm:"primaryKey" json:"id"`
+	Title       string     `gorm:"type:varchar(255);not null" json:"title"`
+	Description string     `gorm:"type:text" json:"description"`
+	Severity    Severity   `gorm:"type:varchar(16);default:minor;index" json:"severity"`
+	Status      BugStatus  `gorm:"type:varchar(16);default:open;index" json:"status"`
+	ReporterID  uint       `gorm:"index:idx_bug_reporter;not null" json:"reporter_id"` // 提交人（测试）
+	AssigneeID  uint       `gorm:"index:idx_bug_assignee;not null" json:"assignee_id"` // 负责人（开发）
+	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 	FixedAt     *time.Time `json:"fixed_at,omitempty"`
 	ClosedAt    *time.Time `json:"closed_at,omitempty"`
 }
@@ -51,9 +51,9 @@ type UpdateStatusRequest struct {
 }
 
 type ListBugRequest struct {
-	Status    string `json:"status"`     // 可选过滤
-	Role      string `json:"role"`       // reported=我提交的 / assigned=指派给我的
-	Limit     int    `json:"limit"`
+	Status string `json:"status"` // 可选过滤
+	Role   string `json:"role"`   // reported=我提交的 / assigned=指派给我的
+	Limit  int    `json:"limit"`
 }
 
 type BugWithNames struct {
@@ -63,6 +63,6 @@ type BugWithNames struct {
 }
 
 type ListBugResponse struct {
-	Bugs []BugWithNames `json:"bugs"`
-	Total int64         `json:"total"`
+	Bugs  []BugWithNames `json:"bugs"`
+	Total int64          `json:"total"`
 }
