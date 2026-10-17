@@ -7,7 +7,8 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-feedsystem}
       TZ: "Asia/Shanghai"
     ports:
-      - "3307:3306"
+      # 绑定 127.0.0.1：基础设施端口不暴露公网（服务器部署安全），本机调试不受影响
+      - "127.0.0.1:3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command:
@@ -27,7 +28,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-123456}
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-123456}"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,8 +41,8 @@ services:
     image: rabbitmq:3-management
     restart: always
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-password123}
@@ -70,8 +71,10 @@ services:
       # 限流参数（测试环境调高注册/登录限额，默认值与原硬编码一致）
       RATELIMIT_REGISTER_MAX: ${RATELIMIT_REGISTER_MAX:-1000}
       RATELIMIT_LOGIN_MAX: ${RATELIMIT_LOGIN_MAX:-1000}
-      # 飞书通知 webhook：默认指向本地 feishu-mock 模拟器；生产环境改为真实飞书机器人 URL
+      # 飞书通知 webhook：默认指向本地 feishu-mock 模拟器；在 .env 配置真实飞书机器人 URL 即可覆盖
       FEISHU_WEBHOOK_URL: ${FEISHU_WEBHOOK_URL:-http://feishu-mock:9000/webhook}
+      # 机器人开启「签名校验」时填入密钥，未开启留空
+      FEISHU_WEBHOOK_SECRET: ${FEISHU_WEBHOOK_SECRET:-}
     ports:
       - "8080:8080"
     volumes:
@@ -142,7 +145,7 @@ services:
       - ./tools/feishu-mock:/app:ro
     command: python -u main.py
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/ >/dev/null || exit 1"]
       interval: 10s
