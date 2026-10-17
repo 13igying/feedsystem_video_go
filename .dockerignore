@@ -4,3 +4,4 @@
 **/.run
 **/*.log
 npm-debug.log*
+**/*_test.go
