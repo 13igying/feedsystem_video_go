@@ -46,3 +46,14 @@ export function updateProfile(data: { avatar_url?: string; bio?: string }) {
 export function refresh(refreshToken: string) {
   return postJson<TokenResponse>('/account/refresh', { refresh_token: refreshToken })
 }
+
+export interface AccountBrief {
+  id: number
+  username: string
+  avatar_url?: string
+  bio?: string
+}
+
+export function listAccounts() {
+  return postJson<{ accounts: AccountBrief[] }>('/account/list', {})
+}

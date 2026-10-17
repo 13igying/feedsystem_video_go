@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	rediscache "feedsystem_video_go/internal/middleware/redis"
 	"feedsystem_video_go/internal/apierror"
+	rediscache "feedsystem_video_go/internal/middleware/redis"
 
 	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
@@ -111,6 +111,11 @@ func (as *AccountService) FindByID(ctx context.Context, id uint) (*Account, erro
 	} else {
 		return account, nil
 	}
+}
+
+// List 返回全部用户（Bug 表单负责人下拉使用）。
+func (as *AccountService) List(ctx context.Context) ([]*Account, error) {
+	return as.accountRepository.FindAll(ctx)
 }
 
 func (as *AccountService) FindByUsername(ctx context.Context, username string) (*Account, error) {

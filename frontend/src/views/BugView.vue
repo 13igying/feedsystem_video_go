@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { createBug, listBugs, updateBugStatus, type BugWithNames } from '../api/bug'
+import { listAccounts, type AccountBrief } from '../api/account'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
@@ -10,6 +11,7 @@ const loading = ref(false)
 const errorMsg = ref('')
 const filterStatus = ref('')
 const filterRole = ref('')
+const accounts = ref<AccountBrief[]>([])
 
 const form = ref({ title: '', description: '', severity: 'minor', assignee_id: '' })
 const submitting = ref(false)
@@ -64,6 +66,16 @@ function availableActions(bug: BugWithNames): { status: string; label: string }[
   return actions
 }
 
+async function loadAccounts() {
+  try {
+    const resp = await listAccounts()
+    accounts.value = resp.accounts ?? []
+  } catch {
+    // 拉取成员列表失败时保持空数组，表单回退为手填负责人 ID
+    accounts.value = []
+  }
+}
+
 async function refresh() {
   loading.value = true
   errorMsg.value = ''
@@ -111,7 +123,10 @@ async function changeStatus(bugId: number, status: string) {
   }
 }
 
-onMounted(refresh)
+onMounted(() => {
+  refresh()
+  loadAccounts()
+})
 </script>
 
 <template>
@@ -123,7 +138,11 @@ onMounted(refresh)
       <h2>提交新 Bug</h2>
       <form class="bug-form" @submit.prevent="submit">
         <input v-model="form.title" placeholder="标题（必填）" />
-        <input v-model="form.assignee_id" placeholder="负责人 ID（必填）" type="number" min="1" />
+        <select v-if="accounts.length" v-model="form.assignee_id">
+          <option value="" disabled>选择负责人（必选）</option>
+          <option v-for="a in accounts" :key="a.id" :value="String(a.id)">{{ a.username }}（#{{ a.id }}）</option>
+        </select>
+        <input v-else v-model="form.assignee_id" placeholder="负责人 ID（必填）" type="number" min="1" />
         <select v-model="form.severity">
           <option v-for="opt in severityOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>

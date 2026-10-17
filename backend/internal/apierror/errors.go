@@ -14,8 +14,8 @@ var (
 
 // wrapped 将业务错误与 HTTP 分类哨兵错误绑定，支持 errors.Is/As 解包。
 type wrapped struct {
-	cls  error // 分类哨兵：ErrUnauthorized / ErrValidation
-	err  error // 原始业务错误
+	cls error // 分类哨兵：ErrUnauthorized / ErrValidation
+	err error // 原始业务错误
 }
 
 func (w *wrapped) Error() string { return w.err.Error() }

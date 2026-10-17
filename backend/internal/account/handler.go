@@ -41,6 +41,20 @@ func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "account created"})
 }
 
+// ListAccounts 返回全部用户的公开信息，供 Bug 表单下拉选择负责人。
+func (h *AccountHandler) ListAccounts(c *gin.Context) {
+	accounts, err := h.accountService.List(c.Request.Context())
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	briefs := make([]FindByIDResponse, 0, len(accounts))
+	for _, a := range accounts {
+		briefs = append(briefs, FindByIDResponse{ID: a.ID, Username: a.Username, AvatarURL: a.AvatarURL, Bio: a.Bio})
+	}
+	c.JSON(200, ListAccountsResponse{Accounts: briefs})
+}
+
 func (h *AccountHandler) Rename(c *gin.Context) {
 	var req RenameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

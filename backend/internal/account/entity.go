@@ -39,6 +39,10 @@ type FindByUsernameResponse struct {
 	Username string `json:"username"`
 }
 
+type ListAccountsResponse struct {
+	Accounts []FindByIDResponse `json:"accounts"`
+}
+
 type ChangePasswordRequest struct {
 	Username    string `json:"username"`
 	OldPassword string `json:"old_password"`

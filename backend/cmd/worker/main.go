@@ -17,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/joho/godotenv"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 

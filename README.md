@@ -84,6 +84,7 @@ GitHub Actions 配置位于 `.github/workflows/ci.yml`，在 Pull Request 以及
 | POST | `/changePassword` | 否 | 改密码（需旧密码） |
 | POST | `/findByID` | 否 | 按 ID 查用户 |
 | POST | `/findByUsername` | 否 | 按用户名查 |
+| POST | `/list` | 否 | 全部用户列表（Bug 表单负责人下拉） |
 | POST | `/getProfile` | 否 | 用户主页（视频数/获赞/粉丝数） |
 | POST | `/logout` | JWT | 登出（同时失效双 token） |
 | POST | `/rename` | JWT | 改名 |

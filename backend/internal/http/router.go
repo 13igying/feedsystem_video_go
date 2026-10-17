@@ -63,6 +63,7 @@ func SetRouter(db *gorm.DB, cache *rediscache.Client, rmq *rabbitmq.RabbitMQ) *g
 		accountGroup.POST("/changePassword", accountHandler.ChangePassword)
 		accountGroup.POST("/findByID", accountHandler.FindByID)
 		accountGroup.POST("/findByUsername", accountHandler.FindByUsername)
+		accountGroup.POST("/list", accountHandler.ListAccounts)
 		accountGroup.POST("/refresh", accountHandler.Refresh)
 	}
 	protectedAccountGroup := accountGroup.Group("")
