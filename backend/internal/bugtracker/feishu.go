@@ -99,12 +99,19 @@ type feishuPostBody struct {
 }
 
 // feishuPostPayload 自定义机器人 post 消息请求体。
+// 飞书协议：msg_type=post 时富文本主体必须嵌在 content.post 下（顶层只认 msg_type/content/timestamp/sign），
+// 缺少 content 层会被飞书以 code=19002 "params error, unknown content value" 拒收。
 // timestamp/sign 仅在机器人开启「签名校验」（配置了 secret）时携带。
 type feishuPostPayload struct {
-	MsgType   string                    `json:"msg_type"`
-	Post      map[string]feishuPostBody `json:"post"`
-	Timestamp string                    `json:"timestamp,omitempty"`
-	Sign      string                    `json:"sign,omitempty"`
+	MsgType   string            `json:"msg_type"`
+	Content   feishuPostContent `json:"content"`
+	Timestamp string            `json:"timestamp,omitempty"`
+	Sign      string            `json:"sign,omitempty"`
+}
+
+// feishuPostContent 富文本消息的 content 包装层（飞书协议要求）。
+type feishuPostContent struct {
+	Post map[string]feishuPostBody `json:"post"`
 }
 
 // feishuResp 飞书 webhook 响应体：成功为 {"code":0,"msg":"success"}。
@@ -178,8 +185,10 @@ func (f *FeishuNotifier) post(title, body, atUser, atTail string) error {
 	}
 	payload := feishuPostPayload{
 		MsgType: "post",
-		Post: map[string]feishuPostBody{
-			"zh_cn": {Title: title, Content: content},
+		Content: feishuPostContent{
+			Post: map[string]feishuPostBody{
+				"zh_cn": {Title: title, Content: content},
+			},
 		},
 	}
 	if f.secret != "" {
@@ -205,7 +214,7 @@ func (f *FeishuNotifier) post(title, body, atUser, atTail string) error {
 		return fmt.Errorf("decode response (HTTP %d, 请检查 webhook 地址是否有效): %w", resp.StatusCode, err)
 	}
 	if result.Code != 0 {
-		return fmt.Errorf("feishu reject code=%d msg=%s（常见原因：签名校验不符/机器人已被移出群/触发频率限制）", result.Code, result.Msg)
+		return fmt.Errorf("feishu reject code=%d msg=%s（19002=消息体结构不符；其他常见原因：签名校验不符/机器人已被移出群/触发频率限制）", result.Code, result.Msg)
 	}
 	log.Printf("[feishu] 通知已发送: %s", title)
 	return nil

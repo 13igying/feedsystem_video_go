@@ -81,7 +81,7 @@ grep -n FEISHU_WEBHOOK_URL .env                     # ③ 确认 .env 已填真�
 ```
 
 - 日志出现「指向 feishu-mock 模拟器」或「未配置 FEISHU_WEBHOOK_URL，通知降级为日志」→ `.env` 没配置或容器未重建。改完 `.env` 必须执行 `docker compose up -d backend` 重建容器（`docker compose restart` **不会**重新注入环境变量）。
-- 日志「feishu reject code=…」→ 签名密钥不对 / 机器人已被移出群 / 触发频率限制。
+- 日志「feishu reject code=…」→ code=19002 为消息体结构不符（更新后端镜像到含 `content.post` 协议修复的版本）；其他 code 多为签名密钥不对 / 机器人已被移出群 / 触发频率限制。
 - 日志「通知已发送」但群里没有消息 → 确认自检不是 mock 模式，再检查机器人是否还在群内、webhook 地址是否复制完整。
 
 ### 飞书真 @ 通知（FEISHU_AT_MAP）

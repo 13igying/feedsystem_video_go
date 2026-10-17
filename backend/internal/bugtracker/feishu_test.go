@@ -53,7 +53,7 @@ func (f *fakeFeishu) received() []feishuPostPayload {
 // payloadText 拼接消息中所有 text 元素，便于断言正文。
 func payloadText(p feishuPostPayload) string {
 	var sb strings.Builder
-	if body, ok := p.Post["zh_cn"]; ok {
+	if body, ok := p.Content.Post["zh_cn"]; ok {
 		for _, row := range body.Content {
 			for _, el := range row {
 				if el.Tag == "text" {
@@ -67,7 +67,7 @@ func payloadText(p feishuPostPayload) string {
 
 // payloadAt 返回消息中第一个 at 元素的 user_id（无则空串）。
 func payloadAt(p feishuPostPayload) string {
-	if body, ok := p.Post["zh_cn"]; ok {
+	if body, ok := p.Content.Post["zh_cn"]; ok {
 		for _, row := range body.Content {
 			for _, el := range row {
 				if el.Tag == "at" {
@@ -109,11 +109,62 @@ func TestPostSuccess(t *testing.T) {
 	if m.MsgType != "post" {
 		t.Fatalf("消息类型应为 post（富文本），实际 %q", m.MsgType)
 	}
-	if got := m.Post["zh_cn"].Title; got != "hello" {
+	if got := m.Content.Post["zh_cn"].Title; got != "hello" {
 		t.Fatalf("标题不符合预期: %q", got)
 	}
 	if !strings.Contains(payloadText(m), "world") {
 		t.Fatalf("正文缺少内容: %q", payloadText(m))
+	}
+}
+
+// TestPostWireFormat 回归 code=19002 缺陷：msg_type=post 时富文本主体必须嵌在
+// content.post.zh_cn 下（此前误将 post 放在顶层，被飞书以 "params error, unknown
+// content value" 拒收，且本地 mock/单测均未拦截）。此用例用原始 JSON 结构锁定协议
+// 嵌套，防止未来改动结构体字段时再次破坏线上格式。
+func TestPostWireFormat(t *testing.T) {
+	f := newFakeFeishu(0, "success")
+	defer f.Close()
+
+	if err := notifierFor(f.URL).post("标题", "正文", "李四", " 尾巴"); err != nil {
+		t.Fatalf("期望发送成功，得到错误: %v", err)
+	}
+	raw, err := json.Marshal(f.received()[0])
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	var wire map[string]any
+	if err := json.Unmarshal(raw, &wire); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if wire["msg_type"] != "post" {
+		t.Fatalf("msg_type 应为 post: %v", wire["msg_type"])
+	}
+	content, ok := wire["content"].(map[string]any)
+	if !ok {
+		t.Fatalf("顶层缺少 content 层（飞书协议要求主体嵌在 content.post 下）: %v", wire)
+	}
+	post, ok := content["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("content 下缺少 post 层: %v", content)
+	}
+	zh, ok := post["zh_cn"].(map[string]any)
+	if !ok {
+		t.Fatalf("post 下缺少 zh_cn: %v", post)
+	}
+	if zh["title"] != "标题" {
+		t.Fatalf("标题不符合预期: %v", zh["title"])
+	}
+	rows, ok := zh["content"].([]any)
+	if !ok || len(rows) != 2 {
+		t.Fatalf("content 应为 2 行（正文 + @行）: %v", zh["content"])
+	}
+	atRow, ok := rows[1].([]any)
+	if !ok || len(atRow) != 3 {
+		t.Fatalf("@ 行应为 3 个元素（箭头文本/@元素/尾巴文本）: %v", rows[1])
+	}
+	at, ok := atRow[1].(map[string]any)
+	if !ok || at["tag"] != "at" || at["user_id"] != "all" {
+		t.Fatalf("@ 元素应为 {tag:at, user_id:all}（AT_MAP 未命中降级 @所有人）: %v", atRow[1])
 	}
 }
 

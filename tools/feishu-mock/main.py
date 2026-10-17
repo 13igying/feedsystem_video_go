@@ -66,10 +66,22 @@ def render_rows() -> str:
     rows = []
     for m in items:
         text = m["body"]
-        # 尝试解析飞书消息体，提取 text 字段更易读
+        # 尝试解析飞书消息体，按协议提取可读文本（post 富文本 / text 纯文本）
         try:
             data = json.loads(m["body"])
-            text = data.get("content", {}).get("text") or m["body"]
+            content = data.get("content") or {}
+            if data.get("msg_type") == "post":
+                zh = (content.get("post") or {}).get("zh_cn") or {}
+                parts = [zh.get("title", "")]
+                for row in zh.get("content", []):
+                    for el in row:
+                        if el.get("tag") == "text":
+                            parts.append(el.get("text", ""))
+                        elif el.get("tag") == "at":
+                            parts.append("@所有人" if el.get("user_id") == "all" else "@成员")
+                text = "\n".join(p for p in parts if p)
+            else:
+                text = content.get("text") or m["body"]
         except (ValueError, AttributeError):
             pass
         rows.append(
@@ -98,7 +110,17 @@ class Handler(BaseHTTPRequestHandler):
             MESSAGES.insert(0, entry)
             del MESSAGES[MAX_KEEP:]
         print(f"[feishu-mock] {entry['time']} 收到通知: {body[:200]}", flush=True)
-        self._json(b'{"code":0,"msg":"success"}')
+        # 按飞书自定义机器人协议做最小校验：结构错误返回业务错误码
+        # （真实飞书对 post 消息缺 content 层同样返回 code=19002，这里保持一致以便本地拦截）
+        code, msg = 0, "success"
+        try:
+            data = json.loads(body)
+            if data.get("msg_type") == "post" and "post" not in (data.get("content") or {}):
+                code, msg = 19002, "params error, unknown content value (mock: post 消息缺少 content.post 层)"
+        except ValueError:
+            pass
+        payload = json.dumps({"code": code, "msg": msg}, ensure_ascii=False).encode()
+        self._json(payload)
 
     def do_GET(self):
         if self.path == "/messages":
