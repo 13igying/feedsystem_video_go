@@ -90,14 +90,18 @@ grep -n FEISHU_WEBHOOK_URL .env                     # ③ 确认 .env 已填真�
 open_id（`ou_` 开头）。自定义机器人无法自行查询成员 ID，一次性按下面步骤获取：
 
 1. 打开 [飞书开放平台](https://open.feishu.cn/) → 开发者后台 → 创建**企业自建应用**（名称随意，如 `bugbot-helper`）；
-2. 应用详情 → 添加应用能力 → **机器人**；创建版本并发布（测试用途可将可用范围设为自己/本部门）；
-3. 把该应用机器人拉进 Bug 通知所在的群（群设置 → 群机器人 → 添加机器人）；
-4. 打开 [API 调试台](https://open.feishu.cn/api-explorer/)，选择该应用 → 调用「获取用户或机器人所在的群列表」
-   （`im/v1/chats`）拿到目标群的 `chat_id`，再调用「获取群成员列表」（`im/v1/chats/:chat_id/members`）；
-5. 从返回的 members 中复制每个成员的 `open_id`；
-6. 在服务器 `.env` 中配置映射（**key 必须与平台注册的用户名完全一致**）：
+2. 应用详情 → 添加应用能力 → **机器人**；
+3. 权限管理 → 开通「获取群信息」（`im:chat:readonly`）；
+4. 创建版本并发布（测试用途可将可用范围设为自己），再把应用机器人拉进 Bug 通知群（群设置 → 群机器人 → 添加机器人）；
+5. 获取成员 open_id（二选一）：
+   - **推荐**：本机运行 `python tools/feishu_openids.py`（按提示填 App ID/Secret），自动列出所在群与群成员
+     open_id，并生成可直接粘贴的 `FEISHU_AT_MAP` 行；报权限不足时按脚本提示补权限并重新发布版本；
+   - 手动：打开 [API 调试台](https://open.feishu.cn/api-explorer/)，选择该应用 → 调用「获取用户或机器人所在的群列表」
+     （`im/v1/chats`）拿到目标群的 `chat_id`，再调用「获取群成员列表」（`im/v1/chats/:chat_id/members`，
+     `member_id_type=open_id`）复制 `member_id`；
+6. 在服务器 `.env` 中配置映射（**key 必须与平台注册的用户名完全一致**，以 Bug 卡片「提交人」字段显示为准）：
    `FEISHU_AT_MAP=张三=ou_xxx,李四=ou_yyy`；
-7. `docker compose up -d backend` 重启生效。
+7. `docker compose up -d backend` 重建容器生效（改 `.env` 无需重新 build）。
 
 行为规则：
 
