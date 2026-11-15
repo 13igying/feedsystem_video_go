@@ -41,3 +41,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+
+# 测试平台已拆分至独立仓库 ai-test-platform；
+# 其运行时产物（reports/ ai_data/ report/ html/）随仓库走，不再出现在本仓库。
+

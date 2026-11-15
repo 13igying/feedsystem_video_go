@@ -73,6 +73,9 @@ GitHub Actions 配置位于 `.github/workflows/ci.yml`，在 Pull Request 以及
 - 后端：Go 1.24.x，执行 `go mod download`、`go vet ./...`、`go test -race -count=1 ./...`
 - 前端：Node.js 22，执行 `npm ci`、`npm run build`
 
+> **测试自动化已拆分**至独立仓库 `ai-test-platform`（pytest 接口/安全/集成/E2E、自研 framework、AI 用例生成与失败分诊、Locust 压测及其 CI）。其在线回归通过 checkout 本仓库并用 `docker compose` 拉起被测系统。
+
+
 ## 接口清单
 
 ### 账号 `/account`
