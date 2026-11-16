@@ -20,6 +20,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 120s
 
   redis:
     image: redis:7-alpine
@@ -49,10 +50,12 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
+      # 冷启动实测约 280s:start_period 内的失败不计入 retries,避免慢启动被误判 unhealthy
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 300s
 
   backend:
     build:
