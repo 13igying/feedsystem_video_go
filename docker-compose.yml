@@ -93,8 +93,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # 不硬绑 rabbitmq healthcheck:低配机上 broker 冷启动可达 5 分钟+
+      # 且偶发卡死;api 已带 10 次指数退避重试,MQ 就绪后 timeline 组件自动接线
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz || exit 1"]
       interval: 10s
@@ -122,8 +124,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # worker 自带 connectWithRetry(10 次指数退避),不依赖 rabbitmq healthcheck
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "pgrep worker || exit 1"]
       interval: 15s
