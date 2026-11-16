@@ -54,9 +54,10 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       # 冷启动实测约 280s:start_period 内的失败不计入 retries,避免慢启动被误判 unhealthy
+      # timeout 15s:diagnostics ping 需启动 Erlang 分布式连接,低配机上常超 5s
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 15s
       retries: 20
       start_period: 300s
 
