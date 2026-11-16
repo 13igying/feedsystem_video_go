@@ -68,10 +68,24 @@ func main() {
 	}
 
 	// 连接 RabbitMQ (可选，用于消息队列)
-	rmq, err := rabbitmq.NewRabbitMQ(&cfg.RabbitMQ)
-	if err != nil {
-		log.Printf("RabbitMQ config error (disabled): %v", err)
-		rmq = nil
+	// 指数退避重试：compose healthcheck 通过 ≠ AMQP 端口就绪，
+	// 单次连接失败会导致 rmq=nil 并永久降级（timeline/outbox 全部失效），因此必须重试。
+	var rmq *rabbitmq.RabbitMQ
+	for i := 0; i < 10; i++ {
+		r, err := rabbitmq.NewRabbitMQ(&cfg.RabbitMQ)
+		if err == nil {
+			rmq = r
+			break
+		}
+		wait := time.Duration(1<<i) * time.Second
+		if wait > 30*time.Second {
+			wait = 30 * time.Second
+		}
+		log.Printf("RabbitMQ 不可用，%v 后重试 (%d/10)...", wait, i+1)
+		time.Sleep(wait)
+	}
+	if rmq == nil {
+		log.Printf("RabbitMQ config error (disabled): 超过最大重试次数")
 	} else {
 		defer rmq.Close()
 		log.Printf("RabbitMQ connected")
