@@ -41,6 +41,9 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     restart: always
+    # 固定 hostname:数据卷(mnesia)中记录的节点名与 hostname 绑定,
+    # 容器 recreate 后默认 hostname 变化会导致 Node name mismatch 反复崩溃
+    hostname: rabbitmq
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
